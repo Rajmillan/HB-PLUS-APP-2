@@ -17,7 +17,12 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <View
+        style={styles.container}
+        accessibilityRole="progressbar"
+        accessibilityLabel={message}
+        accessibilityLiveRegion="polite"
+      >
         {/* HBPLUS Brand Badge */}
         <View style={styles.brandBadge}>
           <Text style={styles.brandLogoText}>HB</Text>
@@ -52,35 +57,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.brand.primary,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
     borderRadius: borderRadius.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   brandLogoText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: colors.text.inverse,
     letterSpacing: 1.5,
   },
   plusContainer: {
-    marginLeft: 3,
+    marginLeft: 2,
   },
   plusSymbol: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
     color: colors.brand.highlight,
   },
   brandTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text.primary,
-    letterSpacing: 1,
-    marginBottom: spacing.xl,
+    letterSpacing: 0.5,
+    marginBottom: spacing.lg,
   },
   indicatorContainer: {
     alignItems: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
   messageText: {
     marginTop: spacing.md,

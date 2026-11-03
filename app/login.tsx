@@ -15,10 +15,12 @@ import {
   colors,
   shadows,
   spacing,
+  useResponsive,
 } from '../src/theme';
 
 export default function LoginScreen() {
   const { signInWithGoogle, isSigningIn, error, clearError } = useAuth();
+  const { isPhoneSm } = useResponsive();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -27,11 +29,21 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isPhoneSm && styles.scrollContentSm,
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.cardWrapper}>
-            <View style={[styles.card, shadows.card]}>
+            <View
+              style={[
+                styles.card,
+                shadows.card,
+                isPhoneSm && styles.cardSm,
+              ]}
+              accessibilityRole="main"
+            >
               {/* Brand Header */}
               <View style={styles.header}>
                 <View style={styles.brandBadge}>
@@ -40,21 +52,30 @@ export default function LoginScreen() {
                     <Text style={styles.plusSymbol}>+</Text>
                   </View>
                 </View>
-                <Text style={styles.brandTitle}>HBPLUS</Text>
+                <Text
+                  accessibilityRole="header"
+                  style={[styles.brandTitle, isPhoneSm && styles.brandTitleSm]}
+                >
+                  HBPLUS
+                </Text>
                 <Text style={styles.brandSubtitle}>
                   Enterprise Performance & Team Portal
                 </Text>
               </View>
 
               {/* Concise Domain Policy Notice */}
-              <View style={styles.domainNoticeContainer}>
+              <View
+                style={styles.domainNoticeContainer}
+                accessibilityRole="alert"
+                accessibilityLabel="Restricted corporate access notice"
+              >
                 <View style={styles.noticeHeaderRow}>
                   <Text style={styles.noticeIcon}>🔒</Text>
                   <Text style={styles.noticeTitle}>Restricted Access</Text>
                 </View>
                 <Text style={styles.noticeDescription}>
                   Sign in is strictly restricted to verified corporate Google accounts ending in{' '}
-                  <Text style={styles.noticeHighlight}>@hbplus.fit</Text>. All other domains will be rejected.
+                  <Text style={styles.noticeHighlight}>@hbplus.fit</Text>. All other domains will be rejected immediately.
                 </Text>
               </View>
 
@@ -80,14 +101,14 @@ export default function LoginScreen() {
 
               {/* Security Compliance Footnote */}
               <Text style={styles.complianceFootnote}>
-                By connecting, you confirm compliance with HBPLUS data protection and internal identity policies.
+                By connecting, you confirm compliance with HBPLUS corporate information security and data protection policies.
               </Text>
             </View>
 
             {/* Application Meta Footer */}
             <View style={styles.footerContainer}>
               <Text style={styles.footerText}>
-                HBPLUS • Phase 1 Identity & Access
+                HBPLUS Inc. • Identity & Access Management
               </Text>
             </View>
           </View>
@@ -112,6 +133,9 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     minHeight: '100%',
   },
+  scrollContentSm: {
+    padding: spacing.sm,
+  },
   cardWrapper: {
     width: '100%',
     maxWidth: 440,
@@ -130,6 +154,10 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  cardSm: {
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+  },
   header: {
     alignItems: 'center',
     marginBottom: spacing.lg,
@@ -138,8 +166,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.brand.primary,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
     borderRadius: borderRadius.md,
     marginBottom: spacing.sm,
   },
@@ -158,10 +186,13 @@ const styles = StyleSheet.create({
     color: colors.brand.highlight,
   },
   brandTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: colors.text.primary,
     letterSpacing: 0.5,
+  },
+  brandTitleSm: {
+    fontSize: 20,
   },
   brandSubtitle: {
     fontSize: 13,
@@ -188,7 +219,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.xs + 2,
   },
   noticeTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.text.brand,
     textTransform: 'uppercase',

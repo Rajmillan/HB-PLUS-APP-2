@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { borderRadius, colors, spacing } from '../theme';
+import { borderRadius, colors, spacing, touchTargets } from '../theme';
 
 interface ErrorBannerProps {
   message: string | null;
@@ -58,9 +58,9 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
         {Boolean(onDismiss) && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Dismiss error message"
+            accessibilityLabel="Dismiss message"
             onPress={onDismiss}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.closeButton}
           >
             <Text style={[styles.closeText, closeTextStyle]}>×</Text>
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    paddingVertical: spacing.md - 2,
+    paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
     marginVertical: spacing.sm,
   },
@@ -105,8 +105,8 @@ const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '500',
   },
   errorText: {
@@ -119,8 +119,11 @@ const styles = StyleSheet.create({
     color: colors.status.info,
   },
   closeButton: {
-    marginLeft: spacing.sm,
-    padding: spacing.xs,
+    minHeight: touchTargets.minHeight,
+    minWidth: touchTargets.minWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing.xs,
     ...Platform.select({
       web: {
         cursor: 'pointer',
@@ -128,9 +131,9 @@ const styles = StyleSheet.create({
     }),
   },
   closeText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   errorClose: {
     color: colors.status.error,

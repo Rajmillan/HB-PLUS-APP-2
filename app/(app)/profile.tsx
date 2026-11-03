@@ -7,22 +7,26 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/features/auth';
 import { useProfile } from '../../src/features/profile';
 import { Avatar, ErrorBanner, RoleBadge } from '../../src/components';
-import { borderRadius, colors, shadows, spacing } from '../../src/theme';
+import {
+  borderRadius,
+  colors,
+  shadows,
+  spacing,
+  touchTargets,
+  useResponsive,
+} from '../../src/theme';
 
 export default function ProfileScreen() {
   const { user } = useAuth();
-  const { profile, updateProfileName, refreshProfile } = useProfile();
+  const { profile, updateProfileName } = useProfile();
   const router = useRouter();
-  const { width } = useWindowDimensions();
-
-  const isDesktop = width >= 1024;
+  const { isPhoneSm, maxContentWidth, contentPadding } = useResponsive();
 
   const [fullName, setFullName] = useState(
     profile?.full_name || user?.user_metadata?.full_name || ''
@@ -54,38 +58,58 @@ export default function ProfileScreen() {
     <ScrollView
       contentContainerStyle={[
         styles.scrollContent,
-        isDesktop && styles.desktopScrollPadding,
+        { padding: contentPadding },
       ]}
+      keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { maxWidth: Math.min(maxContentWidth, 760) }]}>
         {/* Navigation Breadcrumb */}
         <View style={styles.breadcrumbRow}>
-          <Pressable onPress={() => router.push('/')} style={styles.backButton}>
+          <Pressable
+            onPress={() => router.push('/')}
+            accessibilityRole="button"
+            accessibilityLabel="Return to Dashboard"
+            style={styles.backButton}
+          >
             <Text style={styles.backButtonText}>← Dashboard</Text>
           </Pressable>
           <Text style={styles.breadcrumbSeparator}>/</Text>
           <Text style={styles.breadcrumbCurrent}>Profile & Account</Text>
         </View>
 
-        <Text style={styles.pageTitle}>Account Profile</Text>
+        <Text accessibilityRole="header" style={styles.pageTitle}>
+          Account Profile
+        </Text>
         <Text style={styles.pageSubtitle}>
           Manage your verified corporate identity and personal preferences.
         </Text>
 
         {/* Profile Card */}
-        <View style={[styles.card, shadows.card]}>
-          <View style={styles.cardTopRow}>
+        <View style={[styles.card, shadows.card, isPhoneSm && styles.cardSm]}>
+          <View
+            style={[
+              styles.cardTopRow,
+              isPhoneSm && styles.cardTopRowStacked,
+            ]}
+          >
             <Avatar
               url={profile?.avatar_url || user?.user_metadata?.avatar_url}
               name={profile?.full_name || user?.user_metadata?.full_name}
               email={user?.email}
-              size={64}
+              size={isPhoneSm ? 52 : 64}
             />
-            <View style={styles.cardTopDetails}>
-              <Text style={styles.displayName}>
+            <View
+              style={[
+                styles.cardTopDetails,
+                isPhoneSm && styles.cardTopDetailsStacked,
+              ]}
+            >
+              <Text style={styles.displayName} numberOfLines={1}>
                 {profile?.full_name || 'HBPLUS Team Member'}
               </Text>
-              <Text style={styles.emailText}>{user?.email}</Text>
+              <Text style={styles.emailText} numberOfLines={1}>
+                {user?.email}
+              </Text>
               <View style={styles.badgeRow}>
                 <RoleBadge role={profile?.role || 'user'} size="sm" />
                 <View style={styles.domainPill}>
@@ -109,7 +133,7 @@ export default function ProfileScreen() {
             )}
 
             {saveSuccess && (
-              <View style={styles.successBanner}>
+              <View style={styles.successBanner} accessibilityRole="alert">
                 <Text style={styles.successText}>
                   ✓ Display name updated successfully in public.profiles!
                 </Text>
@@ -118,23 +142,25 @@ export default function ProfileScreen() {
 
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Full Display Name</Text>
-              <View style={styles.inputRow}>
+              <View style={[styles.inputRow, isPhoneSm && styles.inputRowStacked]}>
                 <TextInput
                   value={fullName}
                   onChangeText={setFullName}
                   placeholder="Enter your full name"
                   placeholderTextColor={colors.text.muted}
                   style={styles.textInput}
+                  accessibilityLabel="Full Display Name Input"
                 />
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Save profile name"
+                  accessibilityLabel="Save updated profile name"
                   onPress={handleSaveName}
                   disabled={isSaving || !fullName.trim()}
                   style={({ pressed }) => [
                     styles.saveBtn,
                     pressed && styles.btnPressed,
                     (!fullName.trim() || isSaving) && styles.btnDisabled,
+                    isPhoneSm && styles.saveBtnFull,
                   ]}
                 >
                   {isSaving ? (
@@ -153,7 +179,9 @@ export default function ProfileScreen() {
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>Corporate Email (Immutable)</Text>
               <View style={styles.disabledInputBox}>
-                <Text style={styles.disabledInputText}>{user?.email}</Text>
+                <Text style={styles.disabledInputText} numberOfLines={1}>
+                  {user?.email}
+                </Text>
                 <Text style={styles.lockBadge}>🔒 OAuth Bound</Text>
               </View>
               <Text style={styles.fieldHint}>
@@ -224,14 +252,9 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
-    padding: spacing.md,
-  },
-  desktopScrollPadding: {
-    padding: spacing.xl,
   },
   container: {
     width: '100%',
-    maxWidth: 720,
     alignSelf: 'center',
     gap: spacing.md,
   },
@@ -241,6 +264,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   backButton: {
+    minHeight: touchTargets.minHeight,
+    justifyContent: 'center',
     ...Platform.select({ web: { cursor: 'pointer' } }),
   },
   backButtonText: {
@@ -273,13 +298,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.light,
   },
+  cardSm: {
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+  },
   cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  cardTopRowStacked: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
   cardTopDetails: {
     marginLeft: spacing.lg,
     flex: 1,
+  },
+  cardTopDetailsStacked: {
+    marginLeft: 0,
+    width: '100%',
   },
   displayName: {
     fontSize: 18,
@@ -337,6 +375,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  inputRowStacked: {
+    flexDirection: 'column',
+  },
   textInput: {
     flex: 1,
     backgroundColor: colors.background.card,
@@ -345,6 +386,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+    minHeight: touchTargets.minHeight,
     fontSize: 14,
     color: colors.text.primary,
   },
@@ -355,7 +397,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 80,
+    minHeight: touchTargets.minHeight,
     ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  saveBtnFull: {
+    width: '100%',
   },
   saveBtnText: {
     fontSize: 13,
@@ -383,11 +429,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+    minHeight: touchTargets.minHeight,
   },
   disabledInputText: {
     fontSize: 14,
     color: colors.text.secondary,
     fontWeight: '500',
+    flex: 1,
+    marginRight: spacing.sm,
   },
   lockBadge: {
     fontSize: 11,
@@ -417,7 +466,7 @@ const styles = StyleSheet.create({
   },
   metaItem: {
     flex: 1,
-    minWidth: 200,
+    minWidth: 160,
     backgroundColor: colors.background.elevated,
     borderRadius: borderRadius.sm,
     padding: spacing.sm + 2,

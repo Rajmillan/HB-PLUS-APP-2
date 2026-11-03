@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -19,17 +18,21 @@ import {
 } from '../../src/features/profile';
 import type { AdminAnnouncement } from '../../src/features/profile/types';
 import { Avatar, ErrorBanner, RoleBadge } from '../../src/components';
-import { borderRadius, colors, shadows, spacing } from '../../src/theme';
+import {
+  borderRadius,
+  colors,
+  shadows,
+  spacing,
+  touchTargets,
+  useResponsive,
+} from '../../src/theme';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
-  const { profile, isAdmin, loading: profileLoading } = useProfile();
+  const { profile, isAdmin } = useProfile();
   const router = useRouter();
-  const { width } = useWindowDimensions();
-
-  // Responsive breakpoints
-  const isDesktop = width >= 1024;
-  const isTablet = width >= 768 && width < 1024;
+  const { isPhone, isPhoneSm, isTablet, isDesktop, maxContentWidth, contentPadding } =
+    useResponsive();
 
   // Admin capability state
   const [announcements, setAnnouncements] = useState<AdminAnnouncement[]>([]);
@@ -97,14 +100,20 @@ export default function DashboardScreen() {
     <ScrollView
       contentContainerStyle={[
         styles.scrollContent,
-        isDesktop && styles.desktopScrollPadding,
+        { padding: contentPadding },
       ]}
+      keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { maxWidth: maxContentWidth }]}>
         {/* Welcome Greeting Header */}
         <View style={styles.greetingHeader}>
           <View style={styles.greetingTextColumn}>
-            <Text style={styles.greetingTitle}>Welcome back, {greetingName}</Text>
+            <Text
+              accessibilityRole="header"
+              style={[styles.greetingTitle, isPhoneSm && styles.greetingTitleSm]}
+            >
+              Welcome back, {greetingName}
+            </Text>
             <Text style={styles.greetingSubtitle}>
               Corporate Workspace for{' '}
               <Text style={styles.boldText}>{user?.email}</Text>
@@ -120,19 +129,22 @@ export default function DashboardScreen() {
         </View>
 
         {/* Responsive Grid of Overview Cards */}
-        <View style={[styles.grid, (isDesktop || isTablet) && styles.gridRow]}>
+        <View style={[styles.grid, !isPhone && styles.gridRow]}>
           {/* 1. Profile & Account Overview Card */}
           <View
             style={[
               styles.card,
               shadows.card,
-              (isDesktop || isTablet) && styles.gridCol,
+              !isPhone && styles.gridCol,
+              isPhoneSm && styles.cardSm,
             ]}
           >
             <View style={styles.cardHeader}>
               <Text style={styles.cardHeaderTitle}>Account Profile</Text>
               <Pressable
                 onPress={() => router.push('/profile')}
+                accessibilityRole="button"
+                accessibilityLabel="Navigate to edit name in profile"
                 style={styles.cardActionLink}
               >
                 <Text style={styles.cardActionLinkText}>Edit Name →</Text>
@@ -144,11 +156,15 @@ export default function DashboardScreen() {
                 url={profile?.avatar_url || user?.user_metadata?.avatar_url}
                 name={profile?.full_name || user?.user_metadata?.full_name}
                 email={user?.email}
-                size={52}
+                size={isPhoneSm ? 44 : 52}
               />
               <View style={styles.profileDetails}>
-                <Text style={styles.profileFullName}>{greetingName}</Text>
-                <Text style={styles.profileEmail}>{user?.email}</Text>
+                <Text style={styles.profileFullName} numberOfLines={1}>
+                  {greetingName}
+                </Text>
+                <Text style={styles.profileEmail} numberOfLines={1}>
+                  {user?.email}
+                </Text>
                 <Text style={styles.profileCreatedAt}>
                   Provisioned:{' '}
                   {profile?.created_at
@@ -175,7 +191,8 @@ export default function DashboardScreen() {
             style={[
               styles.card,
               shadows.card,
-              (isDesktop || isTablet) && styles.gridCol,
+              !isPhone && styles.gridCol,
+              isPhoneSm && styles.cardSm,
             ]}
           >
             <View style={styles.cardHeader}>
@@ -227,7 +244,14 @@ export default function DashboardScreen() {
         </View>
 
         {/* 3. Admin Capability Panel (Secured by RLS) */}
-        <View style={[styles.card, shadows.card, styles.adminCard]}>
+        <View
+          style={[
+            styles.card,
+            shadows.card,
+            styles.adminCard,
+            isPhoneSm && styles.cardSm,
+          ]}
+        >
           <View style={styles.adminCardHeader}>
             <View style={styles.adminTitleRow}>
               <Text style={styles.adminBadgeIcon}>🛡️</Text>
@@ -277,6 +301,7 @@ export default function DashboardScreen() {
                   value={newTitle}
                   onChangeText={setNewTitle}
                   style={styles.textInput}
+                  accessibilityLabel="Announcement Title"
                 />
                 <TextInput
                   placeholder="Announcement Content..."
@@ -286,17 +311,19 @@ export default function DashboardScreen() {
                   multiline
                   numberOfLines={3}
                   style={[styles.textInput, styles.textArea]}
+                  accessibilityLabel="Announcement Content"
                 />
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Publish announcement"
+                  accessibilityLabel="Publish announcement to team"
                   onPress={handleCreateAnnouncement}
                   disabled={isPosting || !newTitle.trim() || !newContent.trim()}
                   style={({ pressed }) => [
                     styles.publishBtn,
                     pressed && styles.btnPressed,
-                    (!newTitle.trim() || !newContent.trim()) && styles.btnDisabled,
+                    (!newTitle.trim() || !newContent.trim() || isPosting) &&
+                      styles.btnDisabled,
                   ]}
                 >
                   {isPosting ? (
@@ -318,6 +345,9 @@ export default function DashboardScreen() {
                   <Pressable
                     onPress={loadAnnouncements}
                     disabled={announcementsLoading}
+                    accessibilityRole="button"
+                    accessibilityLabel="Refresh announcements feed"
+                    style={styles.refreshPressable}
                   >
                     <Text style={styles.refreshLink}>
                       {announcementsLoading ? 'Refreshing...' : '↻ Refresh'}
@@ -332,9 +362,12 @@ export default function DashboardScreen() {
                     style={styles.feedSpinner}
                   />
                 ) : announcements.length === 0 ? (
-                  <Text style={styles.emptyFeedText}>
-                    No announcements published yet.
-                  </Text>
+                  <View style={styles.emptyFeedBox}>
+                    <Text style={styles.emptyFeedIcon}>📢</Text>
+                    <Text style={styles.emptyFeedText}>
+                      No announcements published yet.
+                    </Text>
+                  </View>
                 ) : (
                   announcements.map((item) => (
                     <View key={item.id} style={styles.announcementItem}>
@@ -381,7 +414,7 @@ export default function DashboardScreen() {
                   role must execute an update in the Supabase SQL editor:
                 </Text>
                 <View style={styles.codeSnippet}>
-                  <Text style={styles.codeSnippetText}>
+                  <Text style={styles.codeSnippetText} selectable>
                     UPDATE public.profiles SET role = 'admin' WHERE email = '
                     {user?.email}';
                   </Text>
@@ -392,7 +425,13 @@ export default function DashboardScreen() {
         </View>
 
         {/* 4. Runtime & Architecture Summary Card */}
-        <View style={[styles.card, shadows.card]}>
+        <View
+          style={[
+            styles.card,
+            shadows.card,
+            isPhoneSm && styles.cardSm,
+          ]}
+        >
           <Text style={styles.cardHeaderTitle}>Runtime & Session Summary</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
@@ -427,14 +466,9 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
-    padding: spacing.md,
-  },
-  desktopScrollPadding: {
-    padding: spacing.xl,
   },
   container: {
     width: '100%',
-    maxWidth: 1000,
     alignSelf: 'center',
     gap: spacing.lg,
   },
@@ -448,13 +482,16 @@ const styles = StyleSheet.create({
   },
   greetingTextColumn: {
     flex: 1,
-    minWidth: 260,
+    minWidth: 240,
   },
   greetingTitle: {
     fontSize: 24,
     fontWeight: '800',
     color: colors.text.primary,
     letterSpacing: -0.3,
+  },
+  greetingTitleSm: {
+    fontSize: 20,
   },
   greetingSubtitle: {
     fontSize: 14,
@@ -464,6 +501,7 @@ const styles = StyleSheet.create({
   greetingBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   verifiedDomainPill: {
@@ -505,6 +543,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.light,
   },
+  cardSm: {
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -517,6 +559,9 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   cardActionLink: {
+    minHeight: touchTargets.minHeight,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
     ...Platform.select({
       web: { cursor: 'pointer' },
     }),
@@ -668,17 +713,20 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+    minHeight: touchTargets.minHeight,
     fontSize: 14,
     color: colors.text.primary,
   },
   textArea: {
-    minHeight: 64,
+    minHeight: 72,
     textAlignVertical: 'top',
   },
   publishBtn: {
     backgroundColor: '#7E22CE', // Admin purple
     paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.sm,
+    minHeight: touchTargets.minHeight,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
@@ -722,22 +770,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text.primary,
   },
-  refreshLink: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.brand.accent,
+  refreshPressable: {
+    minHeight: touchTargets.minHeight,
+    minWidth: touchTargets.minWidth,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
     ...Platform.select({
       web: { cursor: 'pointer' },
     }),
   },
+  refreshLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.brand.accent,
+  },
   feedSpinner: {
     paddingVertical: spacing.md,
+  },
+  emptyFeedBox: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  emptyFeedIcon: {
+    fontSize: 24,
   },
   emptyFeedText: {
     fontSize: 13,
     color: colors.text.muted,
     fontStyle: 'italic',
-    paddingVertical: spacing.sm,
   },
   announcementItem: {
     backgroundColor: colors.background.card,

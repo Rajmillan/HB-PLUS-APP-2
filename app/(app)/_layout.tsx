@@ -8,28 +8,30 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { Redirect, Slot, usePathname, useRouter } from 'expo-router';
 import { useAuth } from '../../src/features/auth';
 import { useProfile } from '../../src/features/profile';
 import { Avatar, LoadingScreen, RoleBadge } from '../../src/components';
-import { borderRadius, colors, shadows, spacing } from '../../src/theme';
+import {
+  borderRadius,
+  colors,
+  shadows,
+  spacing,
+  touchTargets,
+  useResponsive,
+} from '../../src/theme';
 
 export default function ProtectedAppLayout() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { profile, loading: profileLoading, isAdmin } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const router = useRouter();
   const pathname = usePathname();
-  const { width } = useWindowDimensions();
+  const { sidebarVisible, isPhone, isPhoneSm } = useResponsive();
 
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  // Responsive breakpoints
-  const isDesktop = width >= 1024;
-  const isTablet = width >= 768 && width < 1024;
 
   // Auth & profile loading guard - prevents any flash of protected content
   if (authLoading || (user && profileLoading && !profile)) {
@@ -75,10 +77,14 @@ export default function ProtectedAppLayout() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={[styles.rootContainer, isDesktop && styles.desktopRow]}>
-        {/* DESKTOP SIDEBAR NAVIGATION */}
-        {isDesktop && (
-          <View style={[styles.sidebar, shadows.subtle]}>
+      <View style={[styles.rootContainer, sidebarVisible && styles.desktopRow]}>
+        {/* DESKTOP SIDEBAR NAVIGATION (>= 1024px) */}
+        {sidebarVisible && (
+          <View
+            style={[styles.sidebar, shadows.subtle]}
+            accessibilityRole="navigation"
+            accessibilityLabel="Sidebar Navigation"
+          >
             {/* Brand Logo */}
             <View style={styles.sidebarBrand}>
               <View style={styles.brandBadge}>
@@ -119,7 +125,8 @@ export default function ProtectedAppLayout() {
               <Text style={styles.navSectionLabel}>NAVIGATION</Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Go to Dashboard"
+                accessibilityLabel="Navigate to Dashboard"
+                accessibilityState={{ selected: isDashboardActive }}
                 onPress={() => router.push('/')}
                 style={[
                   styles.navItem,
@@ -139,7 +146,8 @@ export default function ProtectedAppLayout() {
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Go to Profile"
+                accessibilityLabel="Navigate to Profile and Account"
+                accessibilityState={{ selected: isProfileActive }}
                 onPress={() => router.push('/profile')}
                 style={[
                   styles.navItem,
@@ -162,7 +170,7 @@ export default function ProtectedAppLayout() {
             <View style={styles.sidebarFooter}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Sign out"
+                accessibilityLabel="Sign out of HBPLUS"
                 onPress={handleLogoutPress}
                 disabled={isSigningOut}
                 style={({ pressed }) => [
@@ -183,76 +191,88 @@ export default function ProtectedAppLayout() {
           </View>
         )}
 
-        {/* MOBILE & TABLET TOP HEADER */}
-        {!isDesktop && (
-          <View style={[styles.topHeader, shadows.subtle]}>
-            <View style={styles.topHeaderLeft}>
-              <View style={styles.compactBrandBadge}>
-                <Text style={styles.compactBrandText}>HB</Text>
-                <Text style={styles.compactPlus}>+</Text>
+        {/* MOBILE & TABLET TOP NAVIGATION (< 1024px) */}
+        {!sidebarVisible && (
+          <View
+            style={[styles.mobileNavContainer, shadows.subtle]}
+            accessibilityRole="navigation"
+            accessibilityLabel="Top Mobile Navigation"
+          >
+            {/* Row 1: Brand & User Identity & Logout */}
+            <View style={styles.topHeader}>
+              <View style={styles.topHeaderLeft}>
+                <View style={styles.compactBrandBadge}>
+                  <Text style={styles.compactBrandText}>HB</Text>
+                  <Text style={styles.compactPlus}>+</Text>
+                </View>
+                <Text style={styles.compactAppTitle}>HBPLUS</Text>
               </View>
-              <Text style={styles.compactAppTitle}>HBPLUS</Text>
+
+              <View style={styles.topHeaderRight}>
+                <RoleBadge role={profile?.role || 'user'} size="sm" />
+                <Pressable
+                  onPress={handleLogoutPress}
+                  disabled={isSigningOut}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out of HBPLUS"
+                  style={styles.compactLogoutBtn}
+                >
+                  {isSigningOut ? (
+                    <ActivityIndicator size="small" color={colors.status.error} />
+                  ) : (
+                    <Text style={styles.compactLogoutText}>Logout</Text>
+                  )}
+                </Pressable>
+              </View>
             </View>
 
-            {/* Navigation Switcher Pills */}
-            <View style={styles.navPillsRow}>
+            {/* Row 2: Segmented Tabs (Phone/Tablet) */}
+            <View style={styles.tabBarContainer}>
               <Pressable
                 onPress={() => router.push('/')}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isDashboardActive }}
+                accessibilityLabel="Dashboard Tab"
                 style={[
-                  styles.pillButton,
-                  isDashboardActive && styles.pillButtonActive,
+                  styles.tabBarButton,
+                  isDashboardActive && styles.tabBarButtonActive,
                 ]}
               >
                 <Text
                   style={[
-                    styles.pillButtonText,
-                    isDashboardActive && styles.pillButtonTextActive,
+                    styles.tabBarText,
+                    isDashboardActive && styles.tabBarTextActive,
                   ]}
                 >
-                  Dashboard
+                  📊 Dashboard
                 </Text>
               </Pressable>
 
               <Pressable
                 onPress={() => router.push('/profile')}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isProfileActive }}
+                accessibilityLabel="Profile Tab"
                 style={[
-                  styles.pillButton,
-                  isProfileActive && styles.pillButtonActive,
+                  styles.tabBarButton,
+                  isProfileActive && styles.tabBarButtonActive,
                 ]}
               >
                 <Text
                   style={[
-                    styles.pillButtonText,
-                    isProfileActive && styles.pillButtonTextActive,
+                    styles.tabBarText,
+                    isProfileActive && styles.tabBarTextActive,
                   ]}
                 >
-                  Profile
+                  👤 Profile & Account
                 </Text>
-              </Pressable>
-            </View>
-
-            {/* Top Right User & Logout */}
-            <View style={styles.topHeaderRight}>
-              <RoleBadge role={profile?.role || 'user'} size="sm" />
-              <Pressable
-                onPress={handleLogoutPress}
-                disabled={isSigningOut}
-                accessibilityRole="button"
-                accessibilityLabel="Sign out"
-                style={styles.compactLogoutBtn}
-              >
-                {isSigningOut ? (
-                  <ActivityIndicator size="small" color={colors.text.secondary} />
-                ) : (
-                  <Text style={styles.compactLogoutText}>Logout</Text>
-                )}
               </Pressable>
             </View>
           </View>
         )}
 
         {/* MAIN ROUTE CONTENT */}
-        <View style={styles.contentArea}>
+        <View style={styles.contentArea} accessibilityRole="main">
           <Slot />
         </View>
       </View>
@@ -272,12 +292,16 @@ export default function ProtectedAppLayout() {
             </Text>
             <View style={styles.modalActions}>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cancel Sign Out"
                 style={[styles.modalBtn, styles.modalCancelBtn]}
                 onPress={() => setShowLogoutModal(false)}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </Pressable>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Confirm Sign Out"
                 style={[styles.modalBtn, styles.modalConfirmBtn]}
                 onPress={handleConfirmLogout}
                 disabled={isSigningOut}
@@ -395,6 +419,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.md,
     marginBottom: spacing.xs,
+    minHeight: touchTargets.minHeight,
     ...Platform.select({
       web: {
         cursor: 'pointer',
@@ -425,12 +450,14 @@ const styles = StyleSheet.create({
   sidebarLogoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.status.errorBorder,
     backgroundColor: colors.status.errorBg,
+    minHeight: touchTargets.minHeight,
     ...Platform.select({
       web: {
         cursor: 'pointer',
@@ -449,16 +476,18 @@ const styles = StyleSheet.create({
   btnPressed: {
     opacity: 0.8,
   },
-  // Mobile / Tablet Header
+  // Mobile Navigation (< 1024px)
+  mobileNavContainer: {
+    backgroundColor: colors.background.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
+  },
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.background.card,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
   },
   topHeaderLeft: {
     flexDirection: 'row',
@@ -488,47 +517,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.text.primary,
   },
-  navPillsRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.background.elevated,
-    borderRadius: borderRadius.full,
-    padding: 3,
-  },
-  pillButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm + 4,
-    borderRadius: borderRadius.full,
-    ...Platform.select({
-      web: {
-        cursor: 'pointer',
-      },
-    }),
-  },
-  pillButtonActive: {
-    backgroundColor: colors.background.card,
-    ...shadows.subtle,
-  },
-  pillButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text.secondary,
-  },
-  pillButtonTextActive: {
-    color: colors.text.primary,
-    fontWeight: '700',
-  },
   topHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs + 2,
+    gap: spacing.sm,
   },
   compactLogoutBtn: {
     paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.sm + 2,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.background.elevated,
+    borderColor: colors.status.errorBorder,
+    backgroundColor: colors.status.errorBg,
+    minHeight: touchTargets.minHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
     ...Platform.select({
       web: {
         cursor: 'pointer',
@@ -536,9 +539,43 @@ const styles = StyleSheet.create({
     }),
   },
   compactLogoutText: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.status.error,
+  },
+  // Mobile Tab Bar (Row 2)
+  tabBarContainer: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
+    backgroundColor: colors.background.elevated,
+  },
+  tabBarButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm + 2,
+    minHeight: touchTargets.minHeight,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      },
+    }),
+  },
+  tabBarButtonActive: {
+    borderBottomColor: colors.brand.accent,
+    backgroundColor: colors.background.card,
+  },
+  tabBarText: {
+    fontSize: 13,
     fontWeight: '600',
     color: colors.text.secondary,
+  },
+  tabBarTextActive: {
+    color: colors.brand.accent,
+    fontWeight: '700',
   },
   contentArea: {
     flex: 1,
@@ -579,6 +616,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.md,
+    minHeight: touchTargets.minHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
     ...Platform.select({
       web: {
         cursor: 'pointer',
