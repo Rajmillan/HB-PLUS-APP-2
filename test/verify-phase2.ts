@@ -163,6 +163,14 @@ assert(!('role' in sanitized), 'Privileged field "role" stripped from client upd
 assert(!('id' in sanitized), 'Immutable field "id" stripped from client update payload');
 assert(!('email' in sanitized), 'Immutable field "email" stripped from client update payload');
 
+// ---------------------------------------------------------------------------
+// 9. MANUAL EMAIL LOGIN POLICY VERIFICATION
+// ---------------------------------------------------------------------------
+console.log('\n[9] Testing Manual Email Login Domain Pre-Validation:');
+assert(isAllowedEmail('employee@hbplus.fit') === true, 'Manual corporate email permitted');
+assert(isAllowedEmail('attacker@gmail.com') === false, 'Manual Gmail entry rejected before network call');
+assert(isAllowedEmail('attacker@hbplus.fit.evil.com') === false, 'Manual spoofed domain rejected before network call');
+
 console.log(`\n======================================================`);
 console.log(`TEST RESULTS: ${passedTests}/${totalTests} tests passed.`);
 console.log(`======================================================\n`);

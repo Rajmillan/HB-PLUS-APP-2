@@ -7,7 +7,9 @@ import {
   APP_SCHEME,
   AUTH_CANCELLED_MESSAGE,
   AUTH_GENERIC_ERROR_MESSAGE,
+  DOMAIN_RESTRICTION_MESSAGE,
 } from '../../constants/config';
+import { isAllowedEmail } from './domainPolicy';
 
 // Ensure any in-progress auth session is cleanly completed (required for web auth session popups)
 WebBrowser.maybeCompleteAuthSession();
@@ -43,7 +45,6 @@ export function getOAuthRedirectUri(): string {
 function parseUrlParameters(url: string): Record<string, string> {
   const params: Record<string, string> = {};
 
-  // Extract from query string (?foo=bar)
   const queryIndex = url.indexOf('?');
   const hashIndex = url.indexOf('#');
 
@@ -208,6 +209,94 @@ export async function signInWithGoogle(): Promise<OAuthResult> {
       err instanceof Error ? err.message : AUTH_GENERIC_ERROR_MESSAGE;
     return {
       type: 'error',
+      error: message,
+    };
+  }
+}
+
+/**
+ * Signs in user with manual Email + Password.
+ * Pre-validates the @hbplus.fit domain policy before initiating request.
+ */
+export async function signInWithEmailPassword(
+  email: string,
+  password: string
+): Promise<OAuthResult> {
+  try {
+    const normalized = email.trim().toLowerCase();
+
+    // Enforce domain policy: reject non-@hbplus.fit emails before network call
+    if (!isAllowedEmail(normalized)) {
+      return {
+        type: 'error',
+        error: DOMAIN_RESTRICTION_MESSAGE,
+      };
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalized,
+      password,
+    });
+
+    if (error) {
+      return {
+        type: 'error',
+        error: error.message || 'Invalid email or password.',
+      };
+    }
+
+    return {
+      type: 'success',
+      session: data.session,
+    };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : 'Email sign in failed.';
+    return {
+      type: 'error',
+      error: message,
+    };
+  }
+}
+
+/**
+ * Sends a passwordless Magic Link / OTP to a verified @hbplus.fit email.
+ */
+export async function sendMagicLink(
+  email: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const normalized = email.trim().toLowerCase();
+
+    // Enforce domain policy: reject non-@hbplus.fit emails before network call
+    if (!isAllowedEmail(normalized)) {
+      return {
+        success: false,
+        error: DOMAIN_RESTRICTION_MESSAGE,
+      };
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalized,
+      options: {
+        emailRedirectTo: getOAuthRedirectUri(),
+        shouldCreateUser: false, // Only existing authorized users
+      },
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : 'Failed to send magic link.';
+    return {
+      success: false,
       error: message,
     };
   }

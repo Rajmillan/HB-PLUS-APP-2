@@ -12,7 +12,12 @@ import {
   AUTH_GENERIC_ERROR_MESSAGE,
   DOMAIN_RESTRICTION_MESSAGE,
 } from '../../constants/config';
-import { signInWithGoogle, signOutUser } from './authService';
+import {
+  sendMagicLink,
+  signInWithEmailPassword,
+  signInWithGoogle,
+  signOutUser,
+} from './authService';
 import { validateAuthorizedUser } from './domainPolicy';
 
 export interface AuthContextType {
@@ -22,6 +27,8 @@ export interface AuthContextType {
   isSigningIn: boolean;
   error: string | null;
   signInWithGoogle: () => Promise<boolean>;
+  signInWithEmail: (email: string, password: string) => Promise<boolean>;
+  sendLoginLink: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -178,6 +185,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [processAndValidateSession]);
 
+  const handleSignInWithEmail = useCallback(
+    async (email: string, password: string): Promise<boolean> => {
+      setError(null);
+      setIsSigningIn(true);
+      try {
+        const result = await signInWithEmailPassword(email, password);
+
+        if (result.type === 'error') {
+          setError(result.error || 'Failed to sign in with email.');
+          return false;
+        }
+
+        if (result.type === 'success' && result.session) {
+          const authorized = await processAndValidateSession(result.session);
+          return authorized;
+        }
+
+        return true;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'An error occurred during email sign in.';
+        setError(message);
+        return false;
+      } finally {
+        setIsSigningIn(false);
+      }
+    },
+    [processAndValidateSession]
+  );
+
+  const handleSendLoginLink = useCallback(
+    async (email: string): Promise<{ success: boolean; error?: string }> => {
+      setError(null);
+      try {
+        const result = await sendMagicLink(email);
+        if (!result.success) {
+          setError(result.error || 'Failed to send login link.');
+        }
+        return result;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Error sending login link.';
+        setError(message);
+        return { success: false, error: message };
+      }
+    },
+    []
+  );
+
   const handleSignOut = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
@@ -210,6 +268,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isSigningIn,
       error,
       signInWithGoogle: handleSignInWithGoogle,
+      signInWithEmail: handleSignInWithEmail,
+      sendLoginLink: handleSendLoginLink,
       signOut: handleSignOut,
       clearError,
     }),
@@ -220,6 +280,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isSigningIn,
       error,
       handleSignInWithGoogle,
+      handleSignInWithEmail,
+      handleSendLoginLink,
       handleSignOut,
       clearError,
     ]
