@@ -240,17 +240,6 @@ export default function LoginScreen() {
                 />
               </View>
 
-              {/* Testing / Setup Assistance Tip */}
-              <View style={styles.helperTipBox}>
-                <Text style={styles.helperTipTitle}>💡 No official @hbplus.fit Google account yet?</Text>
-                <Text style={styles.helperTipText}>
-                  You can create a test user with any password in your{' '}
-                  <Text style={styles.boldText}>Supabase Dashboard → Authentication → Users → Add User</Text>{' '}
-                  (e.g.{' '}
-                  <Text style={styles.codeSnippetInline}>admin@hbplus.fit</Text>) and log in immediately via Email & Password!
-                </Text>
-              </View>
-
               {/* Security Compliance Footnote */}
               <Text style={styles.complianceFootnote}>
                 By connecting, you confirm compliance with HBPLUS corporate information security and data protection policies.
@@ -475,35 +464,6 @@ const styles = StyleSheet.create({
   // Google CTA
   actionSection: {
     marginBottom: spacing.sm,
-  },
-  // Helper Tip Box
-  helperTipBox: {
-    backgroundColor: colors.status.infoBg,
-    borderColor: colors.status.infoBorder,
-    borderWidth: 1,
-    borderRadius: borderRadius.md,
-    padding: spacing.sm + 2,
-    marginTop: spacing.xs,
-  },
-  helperTipTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.text.brand,
-    marginBottom: 2,
-  },
-  helperTipText: {
-    fontSize: 11,
-    lineHeight: 16,
-    color: colors.text.secondary,
-  },
-  codeSnippetInline: {
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontWeight: '700',
-    color: colors.brand.accent,
-  },
-  boldText: {
-    fontWeight: '700',
-    color: colors.text.primary,
   },
   complianceFootnote: {
     marginTop: spacing.md,
