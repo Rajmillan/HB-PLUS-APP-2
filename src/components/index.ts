@@ -3,3 +3,4 @@ export * from './LoadingScreen';
 export * from './ErrorBanner';
 export * from './RoleBadge';
 export * from './Avatar';
+export * from './EyeIcon';

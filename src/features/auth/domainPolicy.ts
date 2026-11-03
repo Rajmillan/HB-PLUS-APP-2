@@ -1,12 +1,18 @@
 import type { User } from '@supabase/supabase-js';
-import { ALLOWED_EMAIL_DOMAIN, DOMAIN_RESTRICTION_MESSAGE } from '../../constants/config';
+import {
+  ALLOWED_EMAIL_DOMAIN,
+  DEV_ALLOW_ALL_EMAILS,
+  DEV_ALLOWED_EMAILS,
+  DOMAIN_RESTRICTION_MESSAGE,
+} from '../../constants/config';
 
 /**
- * Validates if an email belongs to the authorized @hbplus.fit domain.
+ * Validates if an email belongs to the authorized domain policy.
  *
  * Rules:
  * - Trims and lowercases the input.
- * - Requires exact suffix "@hbplus.fit".
+ * - Supports developer override via EXPO_PUBLIC_DEV_ALLOWED_EMAILS or EXPO_PUBLIC_DEV_ALLOW_ALL_EMAILS.
+ * - Requires exact suffix "@hbplus.fit" (or configured ALLOWED_EMAIL_DOMAIN).
  * - DOES NOT use String.prototype.includes() per strict assignment requirements.
  * - Ensures a valid local part exists prior to the domain.
  */
@@ -16,6 +22,22 @@ export function isAllowedEmail(email: string | null | undefined): boolean {
   }
 
   const normalized = email.trim().toLowerCase();
+
+  // Basic sanity check: must contain '@' and have characters before and after
+  const atPos = normalized.indexOf('@');
+  if (atPos <= 0 || atPos === normalized.length - 1) {
+    return false;
+  }
+
+  // Developer toggle: allow all emails during testing if explicitly enabled
+  if (DEV_ALLOW_ALL_EMAILS) {
+    return true;
+  }
+
+  // Developer whitelist: allow specific test/dev emails if listed
+  if (DEV_ALLOWED_EMAILS.indexOf(normalized) !== -1) {
+    return true;
+  }
 
   // Guard against string just being the domain without a local part
   if (normalized.length <= ALLOWED_EMAIL_DOMAIN.length) {
@@ -27,7 +49,7 @@ export function isAllowedEmail(email: string | null | undefined): boolean {
     return false;
   }
 
-  // Ensure valid local part before "@hbplus.fit"
+  // Ensure valid local part before domain
   const localPart = normalized.slice(0, normalized.length - ALLOWED_EMAIL_DOMAIN.length);
 
   // Local part must be non-empty and cannot contain another '@'
@@ -67,7 +89,7 @@ export interface DomainValidationResult {
 }
 
 /**
- * Comprehensive check for user authorization against the @hbplus.fit domain policy.
+ * Comprehensive check for user authorization against the domain policy.
  * Rejects missing email, non-matching domain, or unverified email.
  */
 export function validateAuthorizedUser(

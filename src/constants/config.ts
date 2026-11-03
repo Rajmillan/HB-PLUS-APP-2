@@ -19,9 +19,28 @@ export const IS_SUPABASE_CONFIGURED: boolean = Boolean(
 
 /**
  * Domain policy constants
- * Only exact @hbplus.fit emails are permitted.
+ * Defaults to '@hbplus.fit'. Can be customized or extended for testing via env vars.
  */
-export const ALLOWED_EMAIL_DOMAIN = '@hbplus.fit' as const;
+export const ALLOWED_EMAIL_DOMAIN: string =
+  process.env.EXPO_PUBLIC_ALLOWED_EMAIL_DOMAIN || '@hbplus.fit';
+
+/**
+ * Optional list of developer/test emails permitted for testing when off-domain.
+ * Example in .env: EXPO_PUBLIC_DEV_ALLOWED_EMAILS=myname@gmail.com,developer@test.com
+ */
+export const DEV_ALLOWED_EMAILS: string[] = (
+  process.env.EXPO_PUBLIC_DEV_ALLOWED_EMAILS || ''
+)
+  .split(',')
+  .map((e: string) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+/**
+ * Optional developer toggle to allow all emails during early sandbox testing.
+ * Set EXPO_PUBLIC_DEV_ALLOW_ALL_EMAILS=true in .env to enable.
+ */
+export const DEV_ALLOW_ALL_EMAILS: boolean =
+  process.env.EXPO_PUBLIC_DEV_ALLOW_ALL_EMAILS === 'true';
 
 /**
  * Deep link scheme for native OAuth redirection
