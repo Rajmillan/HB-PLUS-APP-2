@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "tsc --project test/tsconfig.json && node .tmp-test/test/verify-phase1.js && node -e \"require('fs').rmSync('.tmp-test', { recursive: true, force: true })\""
+    "test": "tsc --project test/tsconfig.json && node .tmp-test/test/verify-phase2.js && node -e \"require('fs').rmSync('.tmp-test', { recursive: true, force: true })\""
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

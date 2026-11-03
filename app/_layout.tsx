@@ -2,15 +2,14 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../src/features/auth';
+import { ProfileProvider } from '../src/features/profile';
 import { LoadingScreen } from '../src/components';
 
 /**
- * NavigationGuard coordinates route protection based on verified auth state.
- *
- * Rules:
- * 1. While auth is loading/restoring, renders LoadingScreen (never flashes protected content).
- * 2. If unauthenticated and trying to view protected route, redirects immediately to /login.
- * 3. If authenticated with verified @hbplus.fit and on /login, redirects to /.
+ * Root NavigationGuard coordinates top-level authentication state:
+ * - Shows LoadingScreen while auth initializes.
+ * - Redirects unauthenticated requests to /login.
+ * - Redirects authenticated users away from /login to the protected dashboard (/).
  */
 function NavigationGuard() {
   const { user, loading } = useAuth();
@@ -42,7 +41,7 @@ function NavigationGuard() {
         animation: 'fade',
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen name="(app)" />
       <Stack.Screen name="login" />
       <Stack.Screen name="auth/callback" />
     </Stack>
@@ -53,7 +52,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationGuard />
+        <ProfileProvider>
+          <NavigationGuard />
+        </ProfileProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );
