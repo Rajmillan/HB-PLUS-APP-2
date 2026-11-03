@@ -1,0 +1,36 @@
+{
+  "name": "hbplus-app",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc --project test/tsconfig.json && node .tmp-test/test/verify-phase1.js && node -e \"require('fs').rmSync('.tmp-test', { recursive: true, force: true })\""
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.118.0",
+    "expo": "~58.0.22",
+    "expo-auth-session": "~58.0.16",
+    "expo-constants": "~58.0.14",
+    "expo-linking": "~58.0.15",
+    "expo-router": "~58.0.29",
+    "expo-status-bar": "~58.0.4",
+    "expo-web-browser": "~58.0.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.1",
+    "react-native-web": "^0.21.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  },
+  "private": true
+}
